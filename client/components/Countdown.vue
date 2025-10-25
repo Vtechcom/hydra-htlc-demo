@@ -6,7 +6,7 @@
 		formatPattern?: string
 	}>()
 
-	const timeLeft = ref<number>(0)
+	const timeLeft = ref<number>(5000)
 	let intervalId: number | null = null
 	const calculateTimeLeft = () => {
 		const now = new Date().getTime()

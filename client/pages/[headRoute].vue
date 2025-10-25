@@ -82,6 +82,7 @@
 	provide('hydraWallet', wallet)
 	provide('snapshotUtxo', snapshotUtxo)
 	provide('allHeadsInfo', allHeadsInfo)
+	provide('currentHead', hydraHeadInfo)
 
 	onMounted(() => {
 		try {
@@ -167,27 +168,36 @@
 		toast.success('Wallet disconnected successfully.')
 	}
 
-	const walletInfo = reactive({
-		lovelace: 0
+	const walletInfo = computed(() => {
+		return {
+			lovelace: (() => {
+				let total = 0
+				if (walletAddressBech32.value) {
+					const walletUTxOs = Object.values(snapshotUtxo.value).filter(utxo => utxo.address === walletAddressBech32.value)
+					for (const utxo of walletUTxOs) {
+						const adaAmount = utxo.value.lovelace as number
+						if (adaAmount) {
+							total += adaAmount
+						}
+					}
+				}
+				return total
+			})()
+		}
 	})
 	async function onWalletConnected(appWallet: AppWallet) {
 		wallet.value = appWallet
 		walletAddressBech32.value = appWallet.getAccount().baseAddressBech32
-		refreshWalletInfo()
+		refreshSnapshotUtxo()
 	}
 
-	async function refreshWalletInfo() {
+	async function refreshSnapshotUtxo() {
 		try {
-			const walletUTxOs = await bridge.queryAddressUTxO(walletAddressBech32.value)
-			console.log('Fetched UTXOs:', walletUTxOs)
-			const totalBalance = walletUTxOs.reduce((sum, utxo) => {
-				const adaAmount = utxo.output.amount.find(a => a.unit === 'lovelace')
-				return sum + (adaAmount ? parseInt(adaAmount.quantity) : 0)
-			}, 0)
-			walletInfo.lovelace = totalBalance
+			const snapshot = await bridge.querySnapshotUtxo()
+			snapshotUtxo.value = snapshot || {}
+			triggerRef(snapshotUtxo)
 		} catch (error) {
-			console.error('Error fetching wallet UTXOs:', error)
-			toast.error('Failed to fetch wallet information.')
+			console.error('Failed to refresh snapshot UTxO:', error)
 		}
 	}
 </script>
@@ -229,7 +239,7 @@
 							<span class="text-sm font-medium flex items-center space-x-2">
 								<Icon name="mdi:checkbox-multiple-blank-circle-outline" size="18" class="text-muted-foreground" />
 								<span class="">{{ BigNumber(walletInfo.lovelace).div(1e6).toFormat() }} ADA</span>
-								<RequestFaucetDialog :recipientAddress="walletAddressBech32" @success="refreshWalletInfo()">
+								<RequestFaucetDialog :recipientAddress="walletAddressBech32" @success="refreshSnapshotUtxo()">
 									<template #trigger>
 										<Icon name="mdi:plus-circle" size="18" class="text-success-500 cursor-pointer" />
 									</template>
@@ -293,19 +303,19 @@
 			</header>
 
 			<!-- Content Grid -->
-			<div class="flex-1 grid grid-cols-2 gap-6 p-6 overflow-hidden">
+			<div class="flex-1 flex gap-6 p-6 overflow-hidden">
 				<!-- Left Panel - HTLC Sender Form -->
-				<Card class="flex flex-col">
+				<Card class="flex flex-col w-[600px]">
 					<CardHeader class="p-0 -m-[1px]">
 						<CardTitle class="text-center bg-purple-500 text-white py-8 rounded-t-lg"> SENDER </CardTitle>
 					</CardHeader>
-					<CardContent class="flex-1 flex flex-col gap-4 p-4">
+					<CardContent class="p-0">
 						<FormHtlcSender />
 					</CardContent>
 				</Card>
 
 				<!-- Right Panel - HTLC UTXOs List -->
-				<HtlcUtxos :utxos="htlcUtxos" />
+				<HtlcUtxos :utxos="htlcUtxos" class="min-w-[480px]" />
 			</div>
 		</div>
 	</div>

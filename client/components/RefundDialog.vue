@@ -52,7 +52,7 @@
 			}
 
 			const SLOT_CONFIG: (typeof SLOT_CONFIG_NETWORK)['PREPROD'] = {
-				zeroTime: 1761223746000,
+				zeroTime: useConfigs().infraStartupTime,
 				zeroSlot: 0,
 				slotLength: 1000,
 				epochLength: 432000,

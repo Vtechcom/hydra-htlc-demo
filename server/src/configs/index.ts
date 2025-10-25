@@ -1,3 +1,10 @@
+export type HydraHeadConfig = {
+  name: string;
+  route: string;
+  httpUrl: string;
+  wsUrl: string;
+};
+
 const hydraHeads = [
   {
     name: 'Hydra Head x01',
@@ -17,7 +24,7 @@ const hydraHeads = [
     httpUrl: 'http://localhost:4003',
     wsUrl: 'ws://localhost:4003',
   },
-];
+] as const;
 
 const htlcContract = {
   address: 'addr_test1wrm2fr9t8l8whk8rjlfgcdm57s2t95j0m5u4r7yleqqty5g28dvjy',

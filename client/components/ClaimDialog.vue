@@ -11,9 +11,11 @@
 		txHash: string
 	}>()
 	const isOpen = ref(false)
+
 	const snapshotUtxo = inject('snapshotUtxo') as ShallowRef<UTxOObject>
 	const wallet = inject('hydraWallet') as Ref<AppWallet | null>
 	const bridge = inject('hydraBridge') as HydraBridge
+
 	const { htlcContract } = useConfigs()
 	const loading = ref(false)
 
@@ -32,20 +34,20 @@
 				}
 			})
 
-			const refundUtxo = Converter.convertUTxOObjectToUTxO({
+			const claimUtxo = Converter.convertUTxOObjectToUTxO({
 				[props.txHash as TxHash]: snapshotUtxo.value[props.txHash as TxHash]
 			})
-			if (!refundUtxo || refundUtxo.length === 0) {
+			if (!claimUtxo || claimUtxo.length === 0) {
 				throw new Error('UTxO not found for refund')
 			} else {
-				console.log('>>> / RefundDialog.vue:37 / refundUtxo:', refundUtxo)
+				console.log('>>> / ClaimDialog.vue:37 / claimUtxo:', claimUtxo)
 			}
 			if (!wallet.value) {
 				throw new Error('Wallet not connected')
 			}
 			const walletAddressBech32 = wallet.value.getAccount().baseAddressBech32
 			const walletUtxo = await bridge.queryAddressUTxO(walletAddressBech32)
-			console.log('>>> / RefundDialog.vue:39 / walletUtxo:', walletUtxo)
+			console.log('>>> / ClaimDialog.vue:39 / walletUtxo:', walletUtxo)
 
 			const collateral = walletUtxo.find(utxo => utxo.output.amount.some(amt => amt.unit === 'lovelace' && BigNumber(amt.quantity).gte(5_000_000)))
 			if (!collateral) {
@@ -53,15 +55,15 @@
 			}
 
 			const SLOT_CONFIG: (typeof SLOT_CONFIG_NETWORK)['PREPROD'] = {
-				zeroTime: 1761223746000,
+				zeroTime: useConfigs().infraStartupTime,
 				zeroSlot: 0,
 				slotLength: 1000,
 				epochLength: 432000,
 				startEpoch: 0
 			} as const
 
-			console.log('>>> / RefundDialog.vue:69 / form.preimage:', form.preimage)
-			console.log('>>> / RefundDialog.vue:69 / form.preimage:', CardanoWASM.PlutusData.new_bytes(ParserUtils.toBytes(form.preimage)).to_hex())
+			console.log('>>> / ClaimDialog.vue:69 / form.preimage:', form.preimage)
+			console.log('>>> / ClaimDialog.vue:69 / form.preimage:', CardanoWASM.PlutusData.new_bytes(ParserUtils.toBytes(form.preimage)).to_hex())
 
 			const redeemer = CardanoWASM.Redeemer.new(
 				CardanoWASM.RedeemerTag.new_spend(),
@@ -74,16 +76,17 @@
 					CardanoWASM.BigNum.from_str('20000000')
 				)
 			)
-			console.log('>>> / RefundDialog.vue:86 / redeemer:', redeemer.to_json())
-			console.log('>>> / RefundDialog.vue:86 / signer hash:', wallet.value.getAccount().baseAddress.payment_cred()?.to_keyhash()?.to_hex())
+			console.log('>>> / ClaimDialog.vue:86 / redeemer:', redeemer.to_json())
+			console.log('>>> / ClaimDialog.vue:86 / signer hash:', wallet.value.getAccount().baseAddress.payment_cred()?.to_keyhash()?.to_hex())
+			console.log('>>> / ClaimDialog.vue:86 / current slot:', TimeUtils.unixTimeToEnclosingSlot(Date.now(), SLOT_CONFIG))
 
 			const tx = await txBuilder
 				.setInputs(walletUtxo)
 				.txIn(
-					refundUtxo[0].input.txHash, //
-					refundUtxo[0].input.outputIndex,
-					refundUtxo[0].output.amount,
-					refundUtxo[0].output.address
+					claimUtxo[0].input.txHash, //
+					claimUtxo[0].input.outputIndex,
+					claimUtxo[0].output.amount,
+					claimUtxo[0].output.address
 				)
 				.txInRedeemerValue(redeemer)
 				.txInScript(
@@ -96,25 +99,21 @@
 					collateral.output.amount,
 					walletAddressBech32
 				)
-				// .addOutput({
-				// 	address: walletAddressBech32,
-				// 	amount: refundUtxo[0].output.amount
-				// })
 				.requiredSignerHash(wallet.value.getAccount().baseAddress.payment_cred()?.to_keyhash()?.to_hex() || '')
 				.changeAddress(walletAddressBech32)
 				.invalidAfter(TimeUtils.unixTimeToEnclosingSlot(Date.now() + 1 * 60 * 1000, SLOT_CONFIG))
 				.invalidBefore(TimeUtils.unixTimeToEnclosingSlot(Date.now() - 1 * 60 * 1000, SLOT_CONFIG))
 				.complete()
 			const signedTx = await wallet.value.signTx(tx.to_hex())
-			console.log('Built Refund Transaction:', signedTx)
+			console.log('Built Claim Transaction:', signedTx)
 			const { txId, isConfirmed, isValid, result } = await bridge.submitTxSync({
 				txId: Deserializer.deserializeTx(signedTx).transaction_hash().to_hex(),
 				cborHex: signedTx,
-				description: 'HTLC Refund Transaction',
+				description: 'HTLC Claim Transaction',
 				type: 'Witnessed Tx ConwayEra'
 			})
-			console.log('Refund Transaction Result:', { isConfirmed, isValid, result })
-			toast.success(`Refund transaction submitted successfully. Tx ID: ${txId}`)
+			console.log('Claim Transaction Result:', { isConfirmed, isValid, result })
+			toast.success(`Claim transaction submitted successfully. Tx ID: ${txId}`)
 		} catch (error) {
 			console.error('Error building claim transaction:', error)
 			toast.error('Failed to build claim transaction.')

@@ -88,7 +88,7 @@
 								</div>
 								<div class="text-sm">
 									<span class="text-muted-foreground">remaining: </span>
-									<Countdown :targetTime="item.timeout" class="text-sm font-mono" />
+									<Countdown :targetTime="item.timeout" class="text-sm font-mono" :class="false && 'text-error-400'" />
 								</div>
 							</div>
 							<div class="flex flex-col space-y-1">

@@ -35,9 +35,21 @@ export const useConfigs = () => {
 		vkey: '5820cbdb43be76478dec619911f93a16220662d26fdb4c73a9b26bff144f88f62ef4'
 	}
 
+	// const getStartupTime = () => {
+	// 	try {
+	// 		const data = readFileSync('infra-startup-time.txt', 'utf-8')
+	// 		return parseInt(data)
+	// 	} catch (error) {
+	// 		console.error('Error reading infra startup time:', error)
+	// 		return 0
+	// 	}
+	// }
+	const infraStartupTime = 1761402773000 as const // Fixed timestamp for consistency in tests
+
 	return {
 		hydraHeads,
 		htlcContract,
-		faucetWallet
+		faucetWallet,
+		infraStartupTime
 	}
 }

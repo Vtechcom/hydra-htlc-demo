@@ -20,6 +20,26 @@
 
 	const bridge = inject('hydraBridge') as HydraBridge
 	const wallet = inject('hydraWallet') as Ref<AppWallet | null>
+	const allHeadsInfo = inject('allHeadsInfo') as Ref<
+		{
+			name: string
+			route: string
+			headId: string
+			headSeed: string
+			tag: string
+		}[]
+	>
+	const currentHead = inject('currentHead') as Ref<{
+		name: string
+		route: string
+		headId: string
+		headSeed: string
+		tag: string
+	} | null>
+
+	const headOptions = computed(() => {
+		return allHeadsInfo.value.filter(head => head.headId !== currentHead.value?.headId)
+	})
 
 	const generatePreimage = () => {
 		const randomText = uuidv4()
@@ -108,7 +128,7 @@
 				.txOutInlineDatumValue(datum)
 				.changeAddress(senderAddress)
 				.metadataValue(1, {
-					toHeadId: ParserUtils.toBytes('6f66666c696e652d0000000000000000000000000000000000000000000000000000000000000001')
+					toHeadId: ParserUtils.toBytes(form.headId)
 				})
 				.complete()
 			console.log('Built HTLC Transaction:', tx.to_hex())
@@ -136,60 +156,78 @@
 </script>
 
 <template>
-	<div>
-		<label class="text-sm font-medium mb-2 block">Recipient Address</label>
-		<InputGroup>
-			<InputGroupInput placeholder="Enter recipient address" v-model="form.recipientAddress" />
-			<InputGroupAddon align="inline-end">
-				<InputGroupButton variant="secondary" @click="pasteTo('recipientAddress')"> Paste </InputGroupButton>
-			</InputGroupAddon>
-		</InputGroup>
-	</div>
-
-	<div>
-		<label class="text-sm font-medium mb-2 block">Amount (ADA)</label>
-		<InputGroup>
-			<InputGroupInput placeholder="Amount (ADA)" type="number" v-model="form.amountAda" />
-			<InputGroupAddon align="inline-end">
-				<InputGroupButton variant="secondary" @click="pasteTo('amountAda')"> Paste </InputGroupButton>
-			</InputGroupAddon>
-		</InputGroup>
-	</div>
-
-	<div>
-		<label class="text-sm font-medium mb-2 block">HTLC Timeout (minutes)</label>
-		<InputGroup>
-			<InputGroupInput placeholder="Timeout (minutes)" type="number" v-model="form.timeout" />
-			<!-- <InputGroupAddon align="inline-end">
-				<InputGroupButton variant="secondary" @click="pasteTo('timeout')"> Paste </InputGroupButton>
-			</InputGroupAddon> -->
-		</InputGroup>
-	</div>
-	<div class="space-y-2">
-		<div class="flex w-full justify-between items-center">
-			<label class="text-sm font-medium block">HTLC Hashed</label>
-			<Button variant="ghost" size="sm" class="p-0 px-1 h-auto text-primary-400" @click="generatePreimage()"> <Icon name="mdi:refresh" class="" />Generate </Button>
+	<form @submit.prevent="null" class="flex-1 flex flex-col gap-4 p-4">
+		<div>
+			<label class="text-sm font-medium mb-2 block">Target Head</label>
+			<Select>
+				<SelectTrigger>
+					<SelectValue placeholder="Select target head" />
+				</SelectTrigger>
+				<SelectContent align="end" position="popper">
+					<SelectGroup>
+						<SelectLabel>Hydra heads</SelectLabel>
+						<SelectItem :value="head.headId" v-for="head in headOptions" :key="head.headId" @select="form.headId = head.headId" class="font-mono text-base">
+							{{ head.name }} - {{ formatId(head.headId, 8, 8) }}
+						</SelectItem>
+					</SelectGroup>
+				</SelectContent>
+			</Select>
+		</div>
+		<div>
+			<label class="text-sm font-medium mb-2 block">Recipient Address</label>
+			<InputGroup>
+				<InputGroupInput placeholder="Enter recipient address" v-model="form.recipientAddress" />
+				<InputGroupAddon align="inline-end">
+					<InputGroupButton variant="secondary" @click="pasteTo('recipientAddress')"> Paste </InputGroupButton>
+				</InputGroupAddon>
+			</InputGroup>
 		</div>
 
-		<InputGroup>
-			<InputGroupAddon align="block-start">
-				<InputGroupText class="text-xs">Preimage</InputGroupText>
-			</InputGroupAddon>
-			<InputGroupTextarea placeholder="HTLC Preimage" type="text" v-model="form.preimage" rows="3" class="break-all" />
-			<InputGroupAddon align="block-end" class="justify-end">
-				<InputGroupButton variant="secondary" @click="useCopy(form.preimage)"> Copy </InputGroupButton>
-			</InputGroupAddon>
-		</InputGroup>
+		<div>
+			<label class="text-sm font-medium mb-2 block">Amount (ADA)</label>
+			<InputGroup>
+				<InputGroupInput placeholder="Amount (ADA)" type="number" v-model="form.amountAda" />
+				<InputGroupAddon align="inline-end">
+					<InputGroupButton variant="secondary" @click="pasteTo('amountAda')"> Paste </InputGroupButton>
+				</InputGroupAddon>
+			</InputGroup>
+		</div>
 
-		<InputGroup>
-			<InputGroupInput placeholder="HTLC Hash" type="text" v-model="form.htlcHash" readonly />
-			<InputGroupAddon align="inline-end">
-				<InputGroupButton variant="secondary" @click="useCopy(form.htlcHash)"> Copy </InputGroupButton>
-			</InputGroupAddon>
-		</InputGroup>
-	</div>
+		<div>
+			<label class="text-sm font-medium mb-2 block">HTLC Timeout (minutes)</label>
+			<InputGroup>
+				<InputGroupInput placeholder="Timeout (minutes)" type="number" v-model="form.timeout" />
+				<!-- <InputGroupAddon align="inline-end">
+					<InputGroupButton variant="secondary" @click="pasteTo('timeout')"> Paste </InputGroupButton>
+				</InputGroupAddon> -->
+			</InputGroup>
+		</div>
+		<div class="space-y-2">
+			<div class="flex w-full justify-between items-center">
+				<label class="text-sm font-medium block">HTLC Hashed</label>
+				<Button variant="ghost" size="sm" class="p-0 px-1 h-auto text-primary-400" @click="generatePreimage()"> <Icon name="mdi:refresh" class="" />Generate </Button>
+			</div>
 
-	<Button class="w-full mt-auto" size="lg" @click="buildHtlcTransaction()"> SEND </Button>
+			<InputGroup>
+				<InputGroupAddon align="block-start">
+					<InputGroupText class="text-xs">Preimage</InputGroupText>
+				</InputGroupAddon>
+				<InputGroupTextarea placeholder="HTLC Preimage" type="text" v-model="form.preimage" rows="3" class="break-all" />
+				<InputGroupAddon align="block-end" class="justify-end">
+					<InputGroupButton variant="secondary" @click="useCopy(form.preimage)"> Copy </InputGroupButton>
+				</InputGroupAddon>
+			</InputGroup>
+
+			<InputGroup>
+				<InputGroupInput placeholder="HTLC Hash" type="text" v-model="form.htlcHash" readonly />
+				<InputGroupAddon align="inline-end">
+					<InputGroupButton variant="secondary" @click="useCopy(form.htlcHash)"> Copy </InputGroupButton>
+				</InputGroupAddon>
+			</InputGroup>
+		</div>
+
+		<Button class="w-full mt-auto" size="lg" @click="buildHtlcTransaction()"> SEND </Button>
+	</form>
 </template>
 
 <style lang="scss" scoped></style>
