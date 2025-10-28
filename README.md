@@ -48,7 +48,7 @@ hydra-htlc-demo/
    - Contract: HTLC validator with Claim/Refund logic
 
 4. **Infrastructure**
-   - 2 separate offline Hydra Heads
+   - 3 separate offline Hydra Heads (with 1 node each)
    - Running on Docker containers
 
 ## 📋 System Requirements
