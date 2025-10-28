@@ -30,6 +30,8 @@ export const useConfigs = () => {
 		}
 	}
 
+	const htlcTransmitterAddress = 'addr_test1vruw26lgqedpwgfh0gu2qatjr90nccd4an54ew9xgr6v90g7uyt4z'
+
 	const faucetWallet = {
 		skey: '5820cefb7bfe06e04cee8e070e90b633f4e9b1774cbbc649be1782095dc1bdadafe6',
 		vkey: '5820cbdb43be76478dec619911f93a16220662d26fdb4c73a9b26bff144f88f62ef4'
@@ -44,12 +46,19 @@ export const useConfigs = () => {
 	// 		return 0
 	// 	}
 	// }
-	const infraStartupTime = 1761402773000 as const // Fixed timestamp for consistency in tests
+
+	const startupTimeFromEnv = parseInt(useRuntimeConfig().public.HYDRA_HEAD_START_TIME || '0')
+	if (isNaN(startupTimeFromEnv) || startupTimeFromEnv <= 0) {
+		throw new Error('Invalid or missing HYDRA_HEAD_START_TIME environment variable')
+	}
+
+	const infraStartupTime = startupTimeFromEnv
 
 	return {
 		hydraHeads,
 		htlcContract,
 		faucetWallet,
-		infraStartupTime
+		infraStartupTime,
+		htlcTransmitterAddress
 	}
 }

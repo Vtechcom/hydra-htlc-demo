@@ -198,6 +198,11 @@ export default defineNuxtConfig({
 			]
 		}
 	},
+	runtimeConfig: {
+		public: {
+			HYDRA_HEAD_START_TIME: process.env.HYDRA_HEAD_START_TIME || '' //
+		}
+	},
 
 	// Google Analytics (gtag) configuration
 	gtag: {

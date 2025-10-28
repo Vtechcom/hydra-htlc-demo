@@ -1,3 +1,5 @@
+import chalk from 'chalk';
+
 export type HydraHeadConfig = {
   name: string;
   route: string;
@@ -40,4 +42,21 @@ const faucetWallet = {
   skey: '5820cefb7bfe06e04cee8e070e90b633f4e9b1774cbbc649be1782095dc1bdadafe6',
   vkey: '5820cbdb43be76478dec619911f93a16220662d26fdb4c73a9b26bff144f88f62ef4',
 } as const;
+
+export const getStartupTimeMs = async (): Promise<number> => {
+  try {
+    const startupTime = process.env.HYDRA_HEAD_START_TIME;
+    if (!startupTime) {
+      console.error(
+        chalk.red('HYDRA_HEAD_START_TIME environment variable is not set.'),
+      );
+      return -1;
+    }
+    return parseInt(startupTime, 10);
+  } catch (error) {
+    console.error('Error reading startup time:', error);
+    return -1;
+  }
+};
+
 export { hydraHeads, htlcContract, faucetWallet };

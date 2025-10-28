@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 	import type { HydraBridge } from '@hydra-sdk/bridge'
 	import { CardanoWASM } from '@hydra-sdk/cardano-wasm'
-	import { AppWallet, Converter, DatumUtils, Deserializer, SLOT_CONFIG_NETWORK, TimeUtils, type TxHash, type UTxOObject } from '@hydra-sdk/core'
+	import { AppWallet, Converter, DatumUtils, Deserializer, ParserUtils, SLOT_CONFIG_NETWORK, TimeUtils, type TxHash, type UTxOObject } from '@hydra-sdk/core'
 	import { buildRedeemer, emptyRedeemer, TxBuilder } from '@hydra-sdk/transaction'
 	import BigNumber from 'bignumber.js'
 	import type { ShallowRef } from 'vue'
@@ -69,6 +69,10 @@
 				)
 			)
 
+			const datumJson = refundUtxo[0].output.inlineDatum?.to_json(DatumUtils.DatumSchema.Basic)
+			const datumConstr = datumJson ? JSON.parse(datumJson) : null
+			const htlcHash = datumConstr?.fields[0]?.replace('0x', '')
+
 			const tx = await txBuilder
 				.setInputs(walletUtxo)
 				.txIn(
@@ -96,6 +100,10 @@
 				.changeAddress(walletAddressBech32)
 				.invalidAfter(TimeUtils.unixTimeToEnclosingSlot(Date.now() + 1 * 60 * 1000, SLOT_CONFIG))
 				.invalidBefore(TimeUtils.unixTimeToEnclosingSlot(Date.now() - 1 * 60 * 1000, SLOT_CONFIG))
+				.metadataValue(1, {
+					type: 'Refund',
+					hash: ParserUtils.toBytes(htlcHash)
+				})
 				.complete()
 			const signedTx = await wallet.value.signTx(tx.to_hex())
 			console.log('Built Refund Transaction:', signedTx)

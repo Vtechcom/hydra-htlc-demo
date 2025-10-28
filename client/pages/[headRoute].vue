@@ -206,17 +206,30 @@
 	<div class="flex bg-background">
 		<!-- Sidebar - Hydra Heads List -->
 		<aside class="w-48 border-r border-border bg-card p-4 flex flex-col gap-3">
-			<Button variant="outline" class="w-full justify-start" @click="navigateTo('/')"> All heads </Button>
-
-			<Button
-				v-for="head in hydraHeads"
-				:key="head.route"
-				:variant="head.route === headRoute ? 'default' : 'outline'"
-				class="w-full justify-start"
-				@click="navigateTo(`/${head.route}`)"
-			>
-				{{ head.name }}
-			</Button>
+			<div class="flex flex-col gap-2">
+				<Button variant="outline" class="w-full justify-start"> Hydra Heads </Button>
+				<Button
+					v-for="head in hydraHeads"
+					:key="head.route"
+					:variant="head.route === headRoute ? 'default' : 'outline'"
+					class="w-full justify-start"
+					@click="navigateTo(`/${head.route}`)"
+				>
+					{{ head.name }}
+				</Button>
+			</div>
+			<Separator class="my-2" />
+			<div class="flex flex-col gap-2">
+				<Button variant="outline" class="w-full justify-start"> Lighting Channels </Button>
+				<Button :variant="'outline'" class="w-full justify-start" disabled> Channel 0x01 </Button>
+				<Button :variant="'outline'" class="w-full justify-start" disabled> Channel 0x02 </Button>
+				<Button :variant="'outline'" class="w-full justify-start" disabled> Channel 0x03 </Button>
+			</div>
+			<Separator class="my-2" />
+			<div class="flex flex-col gap-2">
+				<Button variant="outline" class="w-full justify-start"> Ethereum Sepolia </Button>
+				<Button :variant="'outline'" class="w-full justify-start" disabled> Chain ID: 11155111 </Button>
+			</div>
 		</aside>
 
 		<!-- Main Content Area -->

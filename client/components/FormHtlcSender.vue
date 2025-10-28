@@ -7,7 +7,7 @@
 	import { v4 as uuidv4 } from 'uuid'
 	import { toast } from 'vue-sonner'
 
-	const { htlcContract } = useConfigs()
+	const { htlcContract, htlcTransmitterAddress } = useConfigs()
 
 	const form = reactive({
 		recipientAddress: '',
@@ -91,7 +91,7 @@
 				return
 			}
 
-			const receiver = CardanoWASM.Address.from_bech32(form.recipientAddress).payment_cred()?.to_keyhash()?.to_hex()
+			const receiver = CardanoWASM.Address.from_bech32(htlcTransmitterAddress).payment_cred()?.to_keyhash()?.to_hex()
 			const htlcDatum = {
 				hash: form.htlcHash,
 				timeout: Date.now() + form.timeout * 60 * 1000, // current time + timeout in ms = 60 minutes
@@ -105,7 +105,6 @@
 				DatumUtils.mkBytes(htlcDatum.sender),
 				DatumUtils.mkBytes(htlcDatum.receiver!)
 			])
-
 			const senderUTxOs = await bridge.queryAddressUTxO(senderAddress)
 			const txBuilder = new TxBuilder({
 				isHydra: true,
@@ -128,7 +127,8 @@
 				.txOutInlineDatumValue(datum)
 				.changeAddress(senderAddress)
 				.metadataValue(1, {
-					toHeadId: ParserUtils.toBytes(form.headId)
+					toHeadId: ParserUtils.toBytes(form.headId),
+					toAddress: ParserUtils.toBytes(CardanoWASM.Address.from_bech32(form.recipientAddress).to_hex())
 				})
 				.complete()
 			console.log('Built HTLC Transaction:', tx.to_hex())
@@ -151,6 +151,23 @@
 		} catch (error) {
 			console.error('Error building or submitting HTLC transaction:', error)
 			toast.error('An error occurred while processing the HTLC Transaction.')
+		}
+	}
+
+	const buildMetadata = (toHeadId: string, toAddress: string): CardanoWASM.TransactionMetadatum => {
+		const map = CardanoWASM.MetadataMap.new()
+		map.insert(CardanoWASM.TransactionMetadatum.new_text('toHeadId'), CardanoWASM.TransactionMetadatum.new_bytes(ParserUtils.hexToBytes(toHeadId)))
+		map.insert(CardanoWASM.TransactionMetadatum.new_text('toAddress'), CardanoWASM.TransactionMetadatum.new_bytes(ParserUtils.hexToBytes(toAddress)))
+		return CardanoWASM.TransactionMetadatum.new_map(map)
+	}
+
+	const buildVkeyHash = (bech32: string) => {
+		try {
+			const vkeyHash = CardanoWASM.Address.from_bech32(bech32)?.payment_cred()?.to_keyhash()?.to_hex()
+			if (!vkeyHash) throw new Error('Invalid vkeyhash')
+			return vkeyHash
+		} catch (e) {
+			throw e
 		}
 	}
 </script>

@@ -6,10 +6,8 @@
 		utxos: UTxO[]
 	}>()
 
-	const wallet = inject('hydraWallet') as Ref<AppWallet | null>
-
-	const data = computed(() =>
-		props.utxos
+	const data = computed(() => {
+		const items = props.utxos
 			.filter(utxo => {
 				if (!utxo.output.inlineDatum) {
 					return false
@@ -38,75 +36,54 @@
 					amountAda: BigNumber(amountLovelace).dividedBy(1_000_000).toNumber()
 				}
 			})
+		return [...items].sort((a, b) => b.timeout - a.timeout)
+	})
+
+	const queryStr = ref('')
+	const queryData = shallowRef(data.value)
+
+	const search = useDebounceFn((queryStr: string) => {
+		if (!queryStr) {
+			queryData.value = data.value
+			return
+		}
+		const qLower = queryStr.toLowerCase()
+		queryData.value = data.value.filter(item => item.hash.toLowerCase().includes(qLower))
+	}, 300)
+
+	watchEffect(() => {
+		search(queryStr.value)
+	})
+
+	watch(
+		() => props.utxos,
+		() => {
+			search(queryStr.value)
+		},
+		{
+			deep: true
+		}
 	)
-
-	const isYourAddress = (vkeyhash: string) => {
-		if (!wallet.value) return false
-		const addrVkeyhash = wallet.value.getAccount().baseAddress.payment_cred()?.to_keyhash()?.to_hex()
-		return addrVkeyhash === vkeyhash
-	}
-
-	const canBeRefunded = (timeout: number) => {
-		const currentTime = Date.now()
-		return currentTime >= timeout + 1 * 60 * 1000 // add 1 minute buffer
-	}
 </script>
 
 <template>
 	<Card class="flex flex-col overflow-hidden">
 		<CardHeader class="p-0">
-			<CardTitle class="text-center bg-purple-500 text-white rounded-t-lg p-4"> HTLC UTXOs </CardTitle>
+			<CardTitle class="text-center bg-purple-500 text-white rounded-t-lg p-4"> HTLC UTXOs ({{ queryData.length }}) </CardTitle>
 		</CardHeader>
-		<CardContent class="flex-1 overflow-y-auto p-4 max-h-[600px]">
-			<div class="space-y-4">
-				<Card class="bg-muted" v-for="item in data" :key="item.id">
-					<CardContent class="p-4">
-						<div class="flex justify-between items-start mb-2">
-							<div class="space-y-1 flex-1">
-								<div class="text-xs font-mono text-muted-foreground">ID: {{ formatId(item.id, 12, 12) }}</div>
-								<div class="text-sm">
-									<span class="text-muted-foreground">from:</span>
-									<span class="font-mono ml-1">{{ formatId(item.from) }}</span>
-									<span class="text-sm text-gray-400" v-if="isYourAddress(item.from)"> (you)</span>
-								</div>
-								<div class="text-sm">
-									<span class="text-muted-foreground">to:</span>
-									<span class="font-mono ml-1">{{ formatId(item.to) }}</span>
-									<span class="text-sm text-gray-400" v-if="isYourAddress(item.to)"> (you)</span>
-								</div>
-								<div class="text-sm">
-									<span class="text-muted-foreground">amount:</span>
-									<span class="font-mono ml-1">{{ item.amountAda }} ADA</span>
-								</div>
-								<div class="text-sm">
-									<span class="text-muted-foreground">timeout:</span>
-									<span class="font-mono ml-1">{{ useDateFormat(item.timeout, 'YYYY-MM-DD HH:mm:ss') }}</span>
-								</div>
-								<div class="text-sm">
-									<span class="text-muted-foreground">hash:</span>
-									<span class="font-mono ml-1">{{ formatId(item.hash, 8, 8) }}</span>
-								</div>
-								<div class="text-sm">
-									<span class="text-muted-foreground">remaining: </span>
-									<Countdown :targetTime="item.timeout" class="text-sm font-mono" :class="false && 'text-error-400'" />
-								</div>
-							</div>
-							<div class="flex flex-col space-y-1">
-								<RefundDialog :txHash="item.id">
-									<template #trigger>
-										<Button variant="default" size="sm" class="bg-orange-300 hover:bg-orange-400" v-if="isYourAddress(item.from) && canBeRefunded(item.timeout)"> Refund </Button>
-									</template>
-								</RefundDialog>
-								<ClaimDialog :txHash="item.id">
-									<template #trigger>
-										<Button variant="default" size="sm" class="bg-blue-300 hover:bg-blue-400" v-if="isYourAddress(item.to)"> Claim </Button>
-									</template>
-								</ClaimDialog>
-							</div>
-						</div>
-					</CardContent>
-				</Card>
+		<CardContent class="flex-1 overflow-y-auto p-4 max-h-[630px]">
+			<div class="">
+				<InputGroup class="mb-4">
+					<InputGroupInput placeholder="Search by HTLC hash" v-model="queryStr" />
+					<InputGroupAddon align="inline-end">
+						<Icon name="mdi:magnify" />
+					</InputGroupAddon>
+				</InputGroup>
 			</div>
+			<div class="space-y-4" v-if="queryData.length > 0">
+				<HtlcUtxoItem v-for="item in queryData" :key="item.id" :item="item" />
+			</div>
+			<div v-else class="text-center text-gray-500">No HTLC UTXOs found.</div>
 		</CardContent>
 	</Card>
 </template>
