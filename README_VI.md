@@ -1,8 +1,9 @@
 # Hydra HTLC Demo
 
 > **Demo về Cross-Head HTLC (Hash Time-Locked Contract) trên Cardano Hydra Heads**
-> Demo video:
-> ![Hydra HTLC Demo Video]([./docs/HTLC.mp4](https://pub-814516bdb07540dc88999a158d4f7f04.r2.dev/hydra/HTLC.mp4))
+
+Demo video:
+![Hydra HTLC Demo Video](https://pub-814516bdb07540dc88999a158d4f7f04.r2.dev/hydra/HTLC.mp4)
 
 
 ![Hydra HTLC Demo UI](./docs/client.png)
