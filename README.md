@@ -2,6 +2,15 @@
 
 > **Cross-Head HTLC (Hash Time-Locked Contract) Demo on Cardano Hydra Heads**
 
+## 📚 References & Foundation
+
+This repository is built upon the following sources:
+
+- **Repository**: [eutxo-l2-interop](https://github.com/cardano-scaling/eutxo-l2-interop) - Cardano Scaling EUTXO L2 Interoperability
+- **Research & Proposal**: [https://cardano-scaling.github.io/eutxo-l2-interop](https://cardano-scaling.github.io/eutxo-l2-interop) - Scientific research paper and proposal by Sebastian
+
+---
+
 Demo video:
 
 <div align="center">

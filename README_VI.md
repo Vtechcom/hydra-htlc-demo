@@ -2,6 +2,15 @@
 
 > **Demo về Cross-Head HTLC (Hash Time-Locked Contract) trên Cardano Hydra Heads**
 
+## 📚 Tham Khảo & Nguồn Gốc
+
+Repository này được xây dựng dựa trên nền tảng từ những nguồn sau:
+
+- **Repository**: [eutxo-l2-interop](https://github.com/cardano-scaling/eutxo-l2-interop) - Cardano Scaling EUTXO L2 Interoperability
+- **Nghiên cứu & Proposal**: [https://cardano-scaling.github.io/eutxo-l2-interop](https://cardano-scaling.github.io/eutxo-l2-interop) - Bài nghiên cứu khoa học và proposal của Sebastian
+
+---
+
 Demo video:
 <div align="center">
   <a href="https://youtu.be/StxoXdPJi-M?si=DvQ-4Dx-fru-GQ_C">
